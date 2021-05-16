@@ -15,7 +15,7 @@ class Serverinfo(commands.Cog):
 
     
 
-    @commands.command(name='serverinfo', help='Returns information about a user.')
+    @commands.command(name='serverinfo', help='Returns information about a guild/server.')
     async def serverinfo(self, ctx):
         guild=ctx.message.guild
         icon=guild.icon_url
