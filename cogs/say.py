@@ -1,4 +1,5 @@
-from datetime import datetime
+
+import time
 import discord
 from discord import FFmpegPCMAudio
 from discord import player
@@ -22,9 +23,12 @@ class Say(commands.Cog):
             except ChannelNotFound:
                 embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
+        await ctx.message.delete()
         voice = await channel.connect()
         source = FFmpegPCMAudio('./attachments/chupapi.mp3')
-        player = voice.play(source)
+        voice.play(source)
+        while voice.is_playing():
+                time.sleep(.1)
         await voice.disconnect()
 
 
