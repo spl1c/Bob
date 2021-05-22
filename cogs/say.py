@@ -6,11 +6,11 @@ from discord.ext import commands
 from discord.ext.commands import VoiceChannelConverter
 from discord.ext.commands.errors import ChannelNotFound
 
-class Ohyeah(commands.Cog):
+class Say(commands.Cog):
     def __init__(self, bot):
         self.bot=bot
     
-    @commands.command(name='ohyeah', help='Oh yeah!')
+    @commands.command(name='chupapi', help='Chupapi Monyonyo!')
     async def ohyeah(self, ctx, channel=None):
         voicestatus=ctx.author.voice
         converter = VoiceChannelConverter()
@@ -23,10 +23,10 @@ class Ohyeah(commands.Cog):
                 embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
         voice = await channel.connect()
-        source = FFmpegPCMAudio('./attachments/chupapi')
+        source = FFmpegPCMAudio('./attachments/chupapi.mp3')
         player = voice.play(source)
         await voice.disconnect()
 
 
 def setup(bot):
-    bot.add_cog(Ohyeah(bot))
+    bot.add_cog(Say(bot))
