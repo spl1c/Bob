@@ -23,7 +23,7 @@ class Ohyeah(commands.Cog):
                 embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
         voice = await channel.connect()
-        source = FFmpegPCMAudio('./attachments/')
+        source = FFmpegPCMAudio('./attachments/chupapi')
         player = voice.play(source)
         await voice.disconnect()
 
