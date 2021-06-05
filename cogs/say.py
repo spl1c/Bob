@@ -12,7 +12,7 @@ class Say(commands.Cog):
         self.bot=bot
     
     @commands.command(name='chupapi', help='Chupapi Monyonyo!')
-    async def ohyeah(self, ctx, channel=None):
+    async def chupapi(self, ctx, channel=None):
         voicestatus=ctx.author.voice
         converter = VoiceChannelConverter()
         if channel==None: 
