@@ -51,9 +51,9 @@ class Serverinfo(commands.Cog):
         embed.add_field(name='Bots',value=bot_count,inline=True)
         embed.add_field(name='Roles',value=role_count,inline=True)
         embed.add_field(name='Region',value=region,inline=True)
-        if len(invites) != 0:
-            embed.add_field(name='Emojis', value=emoji_count,inline=True)
-        embed.add_field(name='Invite link', value=invites[0].url,inline=True)
+        embed.add_field(name='Emojis', value=emoji_count,inline=True)
+        if len(invites)!=0:
+            embed.add_field(name='Invite link', value=invites[0].url,inline=True)
 
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
         

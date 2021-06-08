@@ -29,9 +29,7 @@ class Userinfo(commands.Cog):
                               timestamp=datetime.utcnow()
                               )
 
-        #Useful stuff
-        bot_icon='https://cdn.discordapp.com/attachments/792860568285347931/803699182421803098/Logo_do_Bot.png'
-        
+        #Useful stuff        
         permissions = [permission[0] for permission in user.permissions_in(ctx.channel) if permission[1] == True]
         roles=[role for role in user.roles]
 

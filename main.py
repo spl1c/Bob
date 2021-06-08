@@ -1,7 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-
+import sqlite3
 
 intents = discord.Intents.all()
 intents.members = True
@@ -12,7 +12,8 @@ bot = commands.Bot(command_prefix='.', intents=intents)
 
 @bot.event
 async def on_connect():
-    await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.playing, name='on Discord!'))
+     
+    await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.playing, name='on a Raspberry Pi 4 Model B!'))
 
 @bot.command(name='load', help='Loads a cog')
 async def load(ctx, extension):
