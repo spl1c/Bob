@@ -10,7 +10,7 @@ class Prefix(commands.Cog):
     
     @commands.command(name='prefix', help='Sets a custom prefix for your guild.')
     @commands.has_guild_permissions(administrator=True)
-    async def prefix(self, ctx, *, prefix):
+    async def prefix(self, ctx, *, prefix=None):
         if prefix is None:
             embed=discord.Embed(description='You must provide a prefix.',colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)

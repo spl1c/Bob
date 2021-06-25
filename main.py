@@ -9,22 +9,27 @@ intents.members = True
 intents.presences = True
 intents.messages = True
 
-bot = commands.Bot(command_prefix='.', intents=intents)
+def get_prefix(bot, message): 
+    if not message.guild:
+        return commands.when_mentioned_or('.')(bot, message)
+
+    db=sqlite3.connect('./db/database.db')
+    cursor=db.cursor()
+    cursor.execute('SELECT prefix FROM main WHERE guild_id=?',(str(message.guild.id),))
+    prefix=cursor.fetchone()
+    cursor.close()
+    db.close()
+
+    if prefix is None:
+        return commands.when_mentioned_or('.')(bot, message)
+
+    print(prefix)
+    return commands.when_mentioned_or(str(prefix[0]))(bot, message)
+
+bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 def innit(self,bot):
     self.bot=bot
-
-def get_prefx(bot, message): 
-    if not message.guild:
-        return commands.when_mentioned_or('.')(bot, message)
-    db=sqlite3.connect('./db/database.db')
-    cursor=db.cursor()
-    cursor.execute('SELECT prefix FROM main WHERE guild_id=?',(message.guild.id,))
-    prefix=cursor.fetchone()
-    if prefix is None:
-        return commands.when_mentioned_or('.')(bot, message)
-    
-    return commands.when_mentioned_or(str(prefix))(bot, message)
 
 @bot.event
 async def on_connect():
