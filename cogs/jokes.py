@@ -113,9 +113,12 @@ class Jokes(commands.Cog):
         jokes = cursor.fetchall()
         cursor.close()
         db.close()
-
-        pages = MyPages(source=MySource(ctx, jokes),clear_reactions_after=True)
-        await pages.start(ctx)   
+        if len(jokes) == 0:
+            embed=discord.Embed(description='There is no pending jokes at the moment.', colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+        else:
+            pages = MyPages(source=MySource(ctx, jokes),clear_reactions_after=True)
+            await pages.start(ctx)   
 
 
     @joke.command()
@@ -143,8 +146,10 @@ class Jokes(commands.Cog):
             db.commit()
             cursor.close()
             db.close()
+            embed=discord.Embed(description="Joke has been added to the joke list.",color=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
         else:
-            embed=discord.Embed(description=f"You did not provide any joke.",color=discord.Colour.red())
+            embed=discord.Embed(description="You did not provide any joke.",color=discord.Colour.red())
             await ctx.channel.send(embed=embed)
 
     @commands.is_owner()
@@ -155,17 +160,17 @@ class Jokes(commands.Cog):
             cursor=db.cursor()
             cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('official',))
             jokes=cursor.fetchall()
+            joke=None
             for i in jokes:
                 if int(i[1])==number:
                     joke=i[0]
-                else:
-                    joke=None
-                    pass
             if joke is None:
                 embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
             else:
-                cursor.execute('DELETE FROM jokes WHERE _rowid_=?', (str(joke),number))
+                cursor.execute('DELETE FROM jokes WHERE jokes=? AND status=?', (str(joke),'official'))
+                embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
+                await ctx.channel.send(embed=embed)
             db.commit()
             cursor.close()
             db.close()
@@ -174,7 +179,7 @@ class Jokes(commands.Cog):
             await ctx.channel.send(embed=embed)
     
     @commands.is_owner()
-    @joke.command(name='accept', help='Accepts a joke from the pending list.')
+    @joke.command()
     async def accept(self, ctx, number: int):
         if number != None:
             db=sqlite3.connect(database_file)
@@ -191,13 +196,15 @@ class Jokes(commands.Cog):
                 await ctx.channel.send(embed=embed)
             else:
                 cursor.execute('UPDATE jokes SET status=? WHERE jokes=?', ('official',str(joke)))
+                embed=discord.Embed(description="Joke has been accepted to the joke list.",color=discord.Colour.green())
+                await ctx.channel.send(embed=embed)
             db.commit()
             cursor.close()
             db.close()    
 
     @commands.is_owner()
-    @joke.command(name='deny', help='Denys a joke from the pending list.')
-    async def deny(self, ctx, number: int):
+    @joke.command()
+    async def reject(self, ctx, number: int):
         if number != None:
             db=sqlite3.connect(database_file)
             cursor=db.cursor()
@@ -212,7 +219,9 @@ class Jokes(commands.Cog):
                 embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
             else:
-                cursor.execute('DELETE FROM jokes WHERE _rowid_=?', (number,))
+                cursor.execute(f'DELETE FROM jokes WHERE jokes=? AND status=?',(joke,'pending'))
+                embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
+                await ctx.channel.send(embed=embed)
             db.commit()
             cursor.close()
             db.close()   
