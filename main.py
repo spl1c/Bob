@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import discord
 from discord.ext import commands
 
@@ -12,7 +13,18 @@ bot = commands.Bot(command_prefix='.', intents=intents)
 
 def innit(self,bot):
     self.bot=bot
+
+def get_prefx(bot, message): 
+    if not message.guild:
+        return commands.when_mentioned_or('.')(bot, message)
+    db=sqlite3.connect('./db/database.db')
+    cursor=db.cursor()
+    cursor.execute('SELECT prefix FROM main WHERE guild_id=?',(message.guild.id,))
+    prefix=cursor.fetchone()
+    if prefix is None:
+        return commands.when_mentioned_or('.')(bot, message)
     
+    return commands.when_mentioned_or(str(prefix))(bot, message)
 
 @bot.event
 async def on_connect():
@@ -34,7 +46,7 @@ async def unload(ctx, extension):
 @unload.error
 async def handler(ctx, error):
     if isinstance(error, commands.NotOwner):
-        embed=discord.Embed(description='You do not have permission to execute such operation', colour=discord.Colour.red())
+        embed=discord.Embed(description='You do not have permission to use this command', colour=discord.Colour.red())
         await ctx.channel.send(embed=embed)
 
 for filename in os.listdir('./cogs'):

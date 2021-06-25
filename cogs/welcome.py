@@ -58,7 +58,7 @@ class Welcome(commands.Cog):
             converter=TextChannelConverter()
             channel=await converter.convert(ctx,channel)
         except:
-            embed=discord.Embed(descriptio='You must provide a channel.',colour=discord.Colour.red())
+            embed=discord.Embed(description='You must provide a channel.',colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
         
         if ctx.author.guild_permissions.manage_channels == True:
@@ -105,6 +105,7 @@ class Welcome(commands.Cog):
     async def message(self, ctx, *,message=None):
         if message==None:
             embed=discord.Embed(description='You must provide a message.',colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
         
         elif ctx.author.guild_permissions.manage_channels == True:
             db=sqlite3.connect('./db/database.db')
@@ -117,19 +118,14 @@ class Welcome(commands.Cog):
                 val=(ctx.guild.id, message)
                 embed=discord.Embed(description='Welcome message has been set.',
                                     timestamp=datetime.utcnow(),
-                                    colour=0x66ff66)
-                embed.set_author(name='Welcome Message')
-                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+                                    colour=discord.Colour.green())
                 await ctx.channel.send(embed=embed)
 
             else:
                 sql=('UPDATE main SET msg=? WHERE guild_id = ?')
                 val=(message, ctx.guild.id)
                 embed=discord.Embed(description=f'Welcome message has been set.',
-                                    timestamp=datetime.utcnow(),
-                                    colour=0x66ff66)
-                embed.set_author(name='Welcome Message')
-                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+                                    colour=discord.Colour.green())
                 await ctx.channel.send(embed=embed)
             
             cursor.execute(sql,val)
