@@ -70,8 +70,8 @@ class Jokes(commands.Cog):
         embed.set_author(name="Available joke commands", icon_url=self.bot_icon)
         embed.add_field(name="Show", value="**.joke show**: Shows a random joke.", inline=True)
         embed.add_field(name="Suggest", value="**.joke suggest [joke]**: Suggests a joke that can later be added to the bot.", inline=False)
-        embed.add_field(name="List", value="**.joke list**: Shows a list of the official jokes.", inline=True)
-        embed.add_field(name="Pending list", value="**.joke pendinglist**: Shows a list of all the pending jokes.", inline=True)
+        embed.add_field(name="List", value="**.joke list**: Shows a list of the official jokes.", inline=False)
+        embed.add_field(name="Pending list", value="**.joke pendinglist**: Shows a list of all the pending jokes.", inline=False)
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
         await ctx.channel.send(embed=embed)
 
@@ -79,7 +79,7 @@ class Jokes(commands.Cog):
     async def show(self, ctx):
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
-        cursor.execute("SELECT jokes FROM jokes")
+        cursor.execute("SELECT jokes FROM jokes WHERE status=?", ('official',))
         global jokes
         jokes = cursor.fetchall()
         cursor.close()
@@ -118,15 +118,17 @@ class Jokes(commands.Cog):
         await pages.start(ctx)   
 
 
-    @commands.command()
-    async def suggest_joke(self, ctx, *,joke):
+    @joke.command()
+    async def suggest(self, ctx, *,joke):
         if joke != None:
             db=sqlite3.connect(database_file)
             cursor=db.cursor()
-            cursor .execute("INSERT INTO jokes(jokes,status) VALUES (?,?)", (str(joke),'pending'))
+            cursor.execute("INSERT INTO jokes(jokes,status) VALUES (?,?)", (str(joke),'pending'))
             db.commit()
             cursor.close()
             db.close()
+            embed=discord.Embed(description="Joke has been added to the pending list.", colour=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
         else:
             embed=discord.Embed(description=f"You did not provide any joke.",color=discord.Colour.red())
             await ctx.channel.send(embed=embed)
@@ -160,10 +162,10 @@ class Jokes(commands.Cog):
                     joke=None
                     pass
             if joke is None:
-                embed=discord.Embed(description='That number is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
             else:
-                cursor.execute('DELETE FROM jokes WHERE jokes=?', (str(joke),))
+                cursor.execute('DELETE FROM jokes WHERE _rowid_=?', (str(joke),number))
             db.commit()
             cursor.close()
             db.close()
@@ -171,15 +173,49 @@ class Jokes(commands.Cog):
             embed=discord.Embed(description=f"You did not provide any number.",color=discord.Colour.red())
             await ctx.channel.send(embed=embed)
     
-#    @commands.is_owner()
-#    @joke.command(name='accept', help='Accepts a joke from the pending list.')
-#    async def accept(self, ctx, number: int):
-        
+    @commands.is_owner()
+    @joke.command(name='accept', help='Accepts a joke from the pending list.')
+    async def accept(self, ctx, number: int):
+        if number != None:
+            db=sqlite3.connect(database_file)
+            cursor=db.cursor()
+            cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
+            jokes=cursor.fetchall()
+            print(jokes)
+            joke=None
+            for i in jokes:
+                if int(i[1])==number:
+                    joke=i[0]
+            if joke is None:
+                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+                await ctx.channel.send(embed=embed)
+            else:
+                cursor.execute('UPDATE jokes SET status=? WHERE jokes=?', ('official',str(joke)))
+            db.commit()
+            cursor.close()
+            db.close()    
 
-#    @commands.is_owner()
-#    @joke.command(name='deny', help='Denys a joke from the pending list.')
-#    async def deny(self, ctx, number: int):
-        
+    @commands.is_owner()
+    @joke.command(name='deny', help='Denys a joke from the pending list.')
+    async def deny(self, ctx, number: int):
+        if number != None:
+            db=sqlite3.connect(database_file)
+            cursor=db.cursor()
+            cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
+            jokes=cursor.fetchall()
+            print(jokes)
+            joke=None
+            for i in jokes:
+                if int(i[1])==number:
+                    joke=i[0]
+            if joke is None:
+                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+                await ctx.channel.send(embed=embed)
+            else:
+                cursor.execute('DELETE FROM jokes WHERE _rowid_=?', (number,))
+            db.commit()
+            cursor.close()
+            db.close()   
 
 def setup(bot):
     bot.add_cog(Jokes(bot))
