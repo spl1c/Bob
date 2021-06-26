@@ -1,3 +1,4 @@
+from os import remove
 import discord
 from discord.ext import commands
 import random
@@ -122,7 +123,7 @@ class Jokes(commands.Cog):
 
 
     @joke.command()
-    async def suggest(self, ctx, *,joke):
+    async def suggest(self, ctx, *,joke=None):
         if joke != None:
             db=sqlite3.connect(database_file)
             cursor=db.cursor()
@@ -138,7 +139,7 @@ class Jokes(commands.Cog):
 
     @commands.is_owner()
     @joke.command()
-    async def add(self, ctx, *, joke):
+    async def add(self, ctx, *, joke=None):
         if joke != None:
             db=sqlite3.connect(database_file)
             cursor=db.cursor()
@@ -155,76 +156,79 @@ class Jokes(commands.Cog):
     @commands.is_owner()
     @joke.command()
     async def remove(self, ctx, number: int):
-        if number != None:
-            db=sqlite3.connect(database_file)
-            cursor=db.cursor()
-            cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('official',))
-            jokes=cursor.fetchall()
-            joke=None
-            for i in jokes:
-                if int(i[1])==number:
-                    joke=i[0]
-            if joke is None:
-                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
-                await ctx.channel.send(embed=embed)
-            else:
-                cursor.execute('DELETE FROM jokes WHERE jokes=? AND status=?', (str(joke),'official'))
-                embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
-                await ctx.channel.send(embed=embed)
-            db.commit()
-            cursor.close()
-            db.close()
-        else:
-            embed=discord.Embed(description=f"You did not provide any number.",color=discord.Colour.red())
+        db=sqlite3.connect(database_file)
+        cursor=db.cursor()
+        cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('official',))
+        jokes=cursor.fetchall()
+        joke=None
+        for i in jokes:
+            if int(i[1])==number:
+                joke=i[0]
+        if joke is None:
+            embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
+        else:
+            cursor.execute('DELETE FROM jokes WHERE jokes=? AND status=?', (str(joke),'official'))
+            embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
+        db.commit()
+        cursor.close()
+        db.close()
     
     @commands.is_owner()
     @joke.command()
     async def accept(self, ctx, number: int):
-        if number != None:
-            db=sqlite3.connect(database_file)
-            cursor=db.cursor()
-            cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
-            jokes=cursor.fetchall()
-            print(jokes)
-            joke=None
-            for i in jokes:
-                if int(i[1])==number:
-                    joke=i[0]
-            if joke is None:
-                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
-                await ctx.channel.send(embed=embed)
-            else:
-                cursor.execute('UPDATE jokes SET status=? WHERE jokes=?', ('official',str(joke)))
-                embed=discord.Embed(description="Joke has been accepted to the joke list.",color=discord.Colour.green())
-                await ctx.channel.send(embed=embed)
-            db.commit()
-            cursor.close()
-            db.close()    
+        db=sqlite3.connect(database_file)
+        cursor=db.cursor()
+        cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
+        jokes=cursor.fetchall()
+        print(jokes)
+        joke=None
+        for i in jokes:
+            if int(i[1])==number:
+                joke=i[0]
+        if joke is None:
+            embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+        else:
+            cursor.execute('UPDATE jokes SET status=? WHERE jokes=?', ('official',str(joke)))
+            embed=discord.Embed(description="Joke has been accepted to the joke list.",color=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
+        db.commit()
+        cursor.close()
+        db.close()    
 
     @commands.is_owner()
     @joke.command()
     async def reject(self, ctx, number: int):
-        if number != None:
-            db=sqlite3.connect(database_file)
-            cursor=db.cursor()
-            cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
-            jokes=cursor.fetchall()
-            print(jokes)
-            joke=None
-            for i in jokes:
-                if int(i[1])==number:
-                    joke=i[0]
-            if joke is None:
-                embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
-                await ctx.channel.send(embed=embed)
-            else:
-                cursor.execute(f'DELETE FROM jokes WHERE jokes=? AND status=?',(joke,'pending'))
-                embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
-                await ctx.channel.send(embed=embed)
-            db.commit()
-            cursor.close()
-            db.close()   
+
+        db=sqlite3.connect(database_file)
+        cursor=db.cursor()
+        cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
+        jokes=cursor.fetchall()
+        print(jokes)
+        joke=None
+        for i in jokes:
+            if int(i[1])==number:
+                joke=i[0]
+        if joke is None:
+            embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+        else:
+            cursor.execute(f'DELETE FROM jokes WHERE jokes=? AND status=?',(joke,'pending'))
+            embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
+        db.commit()
+        cursor.close()
+        db.close()   
+
+    @remove.error
+    @accept.error
+    @reject.error
+    async def handler(ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed=discord.Embed(description='Please provide a valid number.', colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Jokes(bot))
