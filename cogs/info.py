@@ -19,5 +19,11 @@ class Info(commands.Cog):
         embed.add_field(name='Invite',value='[Invite](https://discord.com/oauth2/authorize?client_id=782232275558465557&permissions=2117463287&scope=bot)')
         await ctx.channel.send(embed=embed)
 
+    @commands.command(name='invite', help='Sends a link to invite Bob to your own server.')
+    async def invite(self, ctx):
+        link='https://discord.com/api/oauth2/authorize?client_id=782232275558465557&permissions=2117463287&scope=bot'
+        await ctx.channel.send(message=f'Invite:{link}')
+
+
 def setup(bot):
     bot.add_cog(Info(bot))
