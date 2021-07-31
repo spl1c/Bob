@@ -15,7 +15,7 @@ class Avatar(commands.Cog):
             user= await converter.convert(ctx,member)
         else:
             user=ctx.author
-        embed=discord.Embed(title=f'Avatar',colour=discord.Colour.dark_grey(),
+        embed=discord.Embed(colour=discord.Colour.dark_grey(),
                             timestamp=datetime.utcnow())
         embed.set_author(name=f'{user.name}#{user.discriminator}', icon_url=user.avatar_url)
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)

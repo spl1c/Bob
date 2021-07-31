@@ -20,11 +20,10 @@ def get_prefix(bot, message):
     cursor.close()
     db.close()
 
-    if prefix is None:
+    if prefix is None or prefix[0] is None:
         return commands.when_mentioned_or('.')(bot, message)
-
-    print(prefix)
-    return commands.when_mentioned_or(str(prefix[0]))(bot, message)
+    else:
+        return commands.when_mentioned_or(str(prefix[0]))(bot, message)
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
