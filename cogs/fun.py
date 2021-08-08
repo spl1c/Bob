@@ -254,5 +254,28 @@ class Fun(commands.Cog, description='Funny commands.'):
             time.sleep(.1)
         await voice.disconnect()
 
+
+
+    @commands.command(name='ohyeah', help='Oh yeahhh!!!')
+    async def ohyeah(self, ctx, channel=None):
+        voicestatus=ctx.author.voice
+        converter = VoiceChannelConverter()
+        if channel==None: 
+            channel=voicestatus.channel
+        else:
+            try:
+                channel=converter.convert(ctx,channel)
+            except ChannelNotFound:
+                embed=discord.Embed(description='Channel not found.',color=discord.Colour.red())
+                await ctx.channel.send(embed=embed)
+        await ctx.message.delete()
+        voice = await channel.connect()
+        source = FFmpegPCMAudio('./attachments/hoyeah.mp3')
+        voice.play(source)
+        while voice.is_playing():
+            time.sleep(.1)
+        await voice.disconnect()
+
+
 def setup(bot):
     bot.add_cog(Fun(bot))
