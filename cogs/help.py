@@ -85,7 +85,8 @@ class MyHelp(commands.HelpCommand):
 
     async def send_group_help(self, group):
         commandlist=[]
-        for command in group.commands:
+        filtered_commands=await self.filter_commands(group.commands, sort=True)
+        for command in filtered_commands:
             commandlist.append([str(self.get_clean_command_signature(command)),str(command.help)])
         pages = MyPages(source=MySource(self.context, commandlist, embed_title=group.qualified_name, embed_description='*This is a group of commands*', embed_inline=False), clear_reactions_after=True)
         await pages.start(self.context)
