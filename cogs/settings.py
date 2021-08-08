@@ -1,13 +1,12 @@
 
 import sqlite3
 import discord
-from discord import colour
 from discord.ext import commands
 from discord.ext.commands import TextChannelConverter
-from datetime import date, datetime
+from datetime import datetime
 
 
-class Welcome(commands.Cog):
+class Settings(commands.Cog, description='Commands used to configure myself!'):
     def __init__(self, bot):
         self.bot=bot
         self.bot_icon='https://cdn.discordapp.com/attachments/804110204110897192/851582958199635998/bob_logo_1.png'
@@ -41,7 +40,9 @@ class Welcome(commands.Cog):
         cursor.close()
         db.close()
 
-    @commands.group(invoke_without_command=True)
+
+
+    @commands.group(name='welcome', help='A group of commands for welcome messages.',invoke_without_command=True)
     async def welcome(self, ctx):
         
         embed=discord.Embed(color=0xf2f2f2,
@@ -52,7 +53,9 @@ class Welcome(commands.Cog):
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
         await ctx.channel.send(embed=embed)
 
-    @welcome.command()
+
+
+    @welcome.command(name='channel', help='Sets a channel for the welcome message.')
     async def channel(self, ctx, channel: int):
         try:
             converter=TextChannelConverter()
@@ -101,7 +104,8 @@ class Welcome(commands.Cog):
             await ctx.channel.send(embed=embed)
 
 
-    @welcome.command()
+
+    @welcome.command(name='message', help='Sets the welcome message.')
     async def message(self, ctx, *,message=None):
         if message==None:
             embed=discord.Embed(description='You must provide a message.',colour=discord.Colour.red())
@@ -135,7 +139,38 @@ class Welcome(commands.Cog):
         else:
             embed=discord.Embed(description='You do not have permission to execute such operation.',colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
+    
+
+
+    @commands.command(name='prefix', help='Sets a custom prefix for your guild.')
+    @commands.has_guild_permissions(administrator=True)
+    async def prefix(self, ctx, *, prefix=None):
+        if prefix is None:
+            embed=discord.Embed(description='You must provide a prefix.',colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+        else:
+            db=sqlite3.connect('./db/database.db')
+            cursor=db.cursor()
+            cursor.execute(f'SELECT prefix FROM main WHERE guild_id={ctx.guild.id}')
+            result=cursor.fetchone()
+            if result is None:
+                cursor.execute(f'INSERT INTO main(guild_id, prefix) VALUES (?,?)',(ctx.guild.id, prefix))
+            else:
+                cursor.execute(f'UPDATE main SET prefix=? WHERE guild_id=?',(prefix, ctx.guild.id))
+            
+            db.commit()
+            cursor.close()
+            db.close()
+
+
+
+    @prefix.error
+    async def handler(ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            embed=discord.Embed(description='You do not have permission to use this command', colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+
 
 
 def setup(bot):
-    bot.add_cog(Welcome(bot))
+    bot.add_cog(Settings(bot))

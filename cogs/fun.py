@@ -1,10 +1,13 @@
-from os import remove
 import discord
 from discord.ext import commands
-import random
-from datetime import datetime
 from discord.ext import menus
+from discord import FFmpegPCMAudio
+from discord.ext.commands import VoiceChannelConverter
+from discord.ext.commands.errors import ChannelNotFound
 import sqlite3
+import random
+import time
+from datetime import datetime
 
 database_file='./db/database.db'
 
@@ -36,7 +39,7 @@ class MySource(menus.ListPageSource):
 
     async def write_page(self,menu, fields=[]):
         len_data = len(self.entries)
-        embed=discord.Embed(title=f'Jokes List - Page {menu.current_page+1} of {int(len(jokes)/self.per_page)+1}',
+        embed=discord.Embed(title=f'Jokes List - Page {menu.current_page+1} of {(len_data/self.per_page)+1}',
                             colour=discord.Colour.blue(),
                             timestamp=datetime.utcnow())
 
@@ -58,13 +61,13 @@ class MySource(menus.ListPageSource):
 
 
 
-class Jokes(commands.Cog):
+class Fun(commands.Cog, description='Funny commands.'):
     def __init__(self, bot):
         self.bot = bot
         self.bot_icon='https://cdn.discordapp.com/attachments/804110204110897192/851582958199635998/bob_logo_1.png'
 
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(name='joke', help='This is a group of commands about jokes.', invoke_without_command=True)
     async def joke(self, ctx):
         embed=discord.Embed(color=discord.Color.blue(),
                             timestamp=datetime.utcnow())
@@ -76,8 +79,8 @@ class Jokes(commands.Cog):
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
         await ctx.channel.send(embed=embed)
 
-    @joke.command()
-    async def show(self, ctx):
+    @joke.command(name='tell', help='Tells a joke.')
+    async def tell(self, ctx):
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
         cursor.execute("SELECT jokes FROM jokes WHERE status=?", ('official',))
@@ -90,7 +93,7 @@ class Jokes(commands.Cog):
         embed_message = discord.Embed(name='Test Bot', title='Joke', description=str(joke_choice[0]), color=discord.Colour.blue())          
         await ctx.channel.send(embed=embed_message)
 
-    @joke.command()
+    @joke.command(name='list', help='Shows a list of the official jokes.')
     async def list(self,ctx):
         
         db=sqlite3.connect(database_file)
@@ -104,7 +107,7 @@ class Jokes(commands.Cog):
         pages = MyPages(source=MySource(ctx, jokes),clear_reactions_after=True)
         await pages.start(ctx)
  
-    @joke.command()
+    @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
     async def pendinglist(self,ctx):
         
         db=sqlite3.connect(database_file)
@@ -122,7 +125,7 @@ class Jokes(commands.Cog):
             await pages.start(ctx)   
 
 
-    @joke.command()
+    @joke.command(name='suggest', help='Suggest a joke that can later become official.')
     async def suggest(self, ctx, *,joke=None):
         if joke != None:
             db=sqlite3.connect(database_file)
@@ -138,7 +141,7 @@ class Jokes(commands.Cog):
             await ctx.channel.send(embed=embed)
 
     @commands.is_owner()
-    @joke.command()
+    @joke.command(name='add', help='Add a joke to the list.')
     async def add(self, ctx, *, joke=None):
         if joke != None:
             db=sqlite3.connect(database_file)
@@ -154,7 +157,7 @@ class Jokes(commands.Cog):
             await ctx.channel.send(embed=embed)
 
     @commands.is_owner()
-    @joke.command()
+    @joke.command(name='remove', help='Removes a joke from the list.')
     async def remove(self, ctx, number: int):
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
@@ -176,7 +179,7 @@ class Jokes(commands.Cog):
         db.close()
     
     @commands.is_owner()
-    @joke.command()
+    @joke.command(name='accept', help='Accepts a suggested joke.')
     async def accept(self, ctx, number: int):
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
@@ -199,7 +202,7 @@ class Jokes(commands.Cog):
         db.close()    
 
     @commands.is_owner()
-    @joke.command()
+    @joke.command(name='reject',help='Rejects a suggested joke.')
     async def reject(self, ctx, number: int):
 
         db=sqlite3.connect(database_file)
@@ -230,5 +233,26 @@ class Jokes(commands.Cog):
             embed=discord.Embed(description='Please provide a valid number.', colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
 
+
+    @commands.command(name='chupapi', help='Chupapi Monyonyo!')
+    async def chupapi(self, ctx, channel=None):
+        voicestatus=ctx.author.voice
+        converter = VoiceChannelConverter()
+        if channel==None: 
+            channel=voicestatus.channel
+        else:
+            try:
+                channel=converter.convert(ctx,channel)
+            except ChannelNotFound:
+                embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
+                await ctx.channel.send(embed=embed)
+        await ctx.message.delete()
+        voice = await channel.connect()
+        source = FFmpegPCMAudio('./attachments/chupapi.mp3')
+        voice.play(source)
+        while voice.is_playing():
+            time.sleep(.1)
+        await voice.disconnect()
+
 def setup(bot):
-    bot.add_cog(Jokes(bot))
+    bot.add_cog(Fun(bot))
