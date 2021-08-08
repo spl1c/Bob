@@ -261,7 +261,7 @@ class Fun(commands.Cog, description='Funny commands.'):
         voicestatus=ctx.author.voice
         converter = VoiceChannelConverter()
         if channel==None: 
-            channel=voicestatus.channelS
+            channel=voicestatus.channel
         else:
             try:
                 channel = await converter.convert(ctx,channel)
