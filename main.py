@@ -13,7 +13,7 @@ intents.reactions = True
 
 def get_prefix(bot, message): 
     if not message.guild:
-        return commands.when_mentioned_or('+')(bot, message)
+        return commands.when_mentioned_or('.')(bot, message)
 
     db=sqlite3.connect('./db/database.db')
     cursor=db.cursor()
@@ -23,7 +23,7 @@ def get_prefix(bot, message):
     db.close()
 
     if prefix is None or prefix[0] is None:
-        return commands.when_mentioned_or('+')(bot, message)
+        return commands.when_mentioned_or('.')(bot, message)
     else:
         return commands.when_mentioned_or(str(prefix[0]))(bot, message)
 
