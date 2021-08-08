@@ -242,7 +242,7 @@ class Fun(commands.Cog, description='Funny commands.'):
             channel=voicestatus.channel
         else:
             try:
-                channel=converter.convert(ctx,channel)
+                await channel=converter.convert(ctx,channel)
             except ChannelNotFound:
                 embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
@@ -264,7 +264,7 @@ class Fun(commands.Cog, description='Funny commands.'):
             channel=voicestatus.channel
         else:
             try:
-                channel=converter.convert(ctx,channel)
+                await channel=converter.convert(ctx,channel)
             except ChannelNotFound:
                 embed=discord.Embed(description='Channel not found.',color=discord.Colour.red())
                 await ctx.channel.send(embed=embed)
