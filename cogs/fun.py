@@ -39,13 +39,13 @@ class MySource(menus.ListPageSource):
 
     async def write_page(self,menu, fields=[]):
         len_data = len(self.entries)
-        embed=discord.Embed(title=f'Jokes List - Page {menu.current_page+1} of {(len_data/self.per_page)+1}',
-                            colour=discord.Colour.blue(),
+        embed=discord.Embed(title=f'Jokes List',
+                            colour=0xf2f2f2,
                             timestamp=datetime.utcnow())
 
         for name,value in fields:
             embed.add_field(name=name, value=value, inline=False)
-        embed.set_footer(text=f'Requested by {self.ctx.author.name}#{self.ctx.author.discriminator}',icon_url=self.ctx.author.avatar_url)
+        embed.set_footer(text=f'Page {menu.current_page+1}/{self.get_max_pages()}',icon_url=self.ctx.author.avatar_url)
         return embed
 
     async def format_page(self, menu, entries):
@@ -67,15 +67,16 @@ class Fun(commands.Cog, description='Funny commands.'):
         self.bot_icon='https://cdn.discordapp.com/attachments/804110204110897192/851582958199635998/bob_logo_1.png'
 
 
-    @commands.group(name='joke', help='This is a group of commands about jokes.', invoke_without_command=True)
+    @commands.group(name='joke', help='This is a group  of commands about jokes.', invoke_without_command=True)
     async def joke(self, ctx):
-        embed=discord.Embed(color=discord.Color.blue(),
+        prefix=self.bot.command_prefix(self.bot, ctx.message)[2]
+        embed=discord.Embed(color=0xf2f2f2,
                             timestamp=datetime.utcnow())
         embed.set_author(name="Available joke commands", icon_url=self.bot_icon)
-        embed.add_field(name="Show", value="**.joke show**: Shows a random joke.", inline=True)
-        embed.add_field(name="Suggest", value="**.joke suggest [joke]**: Suggests a joke that can later be added to the bot.", inline=False)
-        embed.add_field(name="List", value="**.joke list**: Shows a list of the official jokes.", inline=False)
-        embed.add_field(name="Pending list", value="**.joke pendinglist**: Shows a list of all the pending jokes.", inline=False)
+        embed.add_field(name="Tell", value=f"**{prefix}joke tell**: Shows a random joke.", inline=True)
+        embed.add_field(name="Suggest", value=f"**{prefix}joke suggest [joke]**: Suggests a joke that can later be added to the bot.", inline=False)
+        embed.add_field(name="List", value=f"**{prefix}joke list**: Shows a list of the official jokes.", inline=False)
+        embed.add_field(name="Pending list", value=f"**{prefix}joke pendinglist**: Shows a list of all the pending jokes.", inline=False)
         embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
         await ctx.channel.send(embed=embed)
 
@@ -90,7 +91,7 @@ class Fun(commands.Cog, description='Funny commands.'):
         db.close()
         joke_choice = random.choice(jokes)
         
-        embed_message = discord.Embed(name='Test Bot', title='Joke', description=str(joke_choice[0]), color=discord.Colour.blue())          
+        embed_message = discord.Embed(title='Joke', description=str(joke_choice[0]), color=0xf2f2f2)          
         await ctx.channel.send(embed=embed_message)
 
     @joke.command(name='list', help='Shows a list of the official jokes.')

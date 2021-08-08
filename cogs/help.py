@@ -56,9 +56,8 @@ class MyHelp(commands.HelpCommand):
     def get_clean_command_signature(self, command):
         return '%s%s %s' % (self.clean_prefix, command.qualified_name, command.signature)
 
-
     async def send_bot_help(self, mapping):
-        prefix=self.context.prefix
+        prefix=self.clean_prefix
 
         description=f"*Hi, I'm Bob and I'm here to help you!*\n\n**Do you need help with a command?**\nType `{prefix}help [command]`.\n\n**Do you need help with a category?**\nType `{prefix}help [category]`.\n\n**__CATEGORIES__**"
 
