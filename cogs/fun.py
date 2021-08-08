@@ -33,13 +33,14 @@ class MyPages(menus.MenuPages, inherit_buttons=False):
 
 
 class MySource(menus.ListPageSource):
-    def __init__(self, ctx, data):
+    def __init__(self, ctx, data, title):
         self.ctx=ctx
+        self.title=title
         super().__init__(data, per_page=10)
 
     async def write_page(self,menu, fields=[]):
         len_data = len(self.entries)
-        embed=discord.Embed(title=f'Jokes List',
+        embed=discord.Embed(title=self.title,
                             colour=0xf2f2f2,
                             timestamp=datetime.utcnow())
 
@@ -105,7 +106,7 @@ class Fun(commands.Cog, description='Funny commands.'):
         cursor.close()
         db.close()
 
-        pages = MyPages(source=MySource(ctx, jokes),clear_reactions_after=True)
+        pages = MyPages(source=MySource(ctx, jokes, title='Joke list'),clear_reactions_after=True)
         await pages.start(ctx)
  
     @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
@@ -122,7 +123,7 @@ class Fun(commands.Cog, description='Funny commands.'):
             embed=discord.Embed(description='There is no pending jokes at the moment.', colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
         else:
-            pages = MyPages(source=MySource(ctx, jokes),clear_reactions_after=True)
+            pages = MyPages(source=MySource(ctx, jokes, title='Pending joke list'),clear_reactions_after=True)
             await pages.start(ctx)   
 
 
