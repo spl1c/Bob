@@ -2,16 +2,18 @@ import os
 import sqlite3
 import discord
 from discord.ext import commands
+from discord.ext.commands.help import MinimalHelpCommand
 
 
 intents = discord.Intents.all()
 intents.members = True
 intents.presences = True
 intents.messages = True
+intents.reactions = True
 
 def get_prefix(bot, message): 
     if not message.guild:
-        return commands.when_mentioned_or('.')(bot, message)
+        return commands.when_mentioned_or('+')(bot, message)
 
     db=sqlite3.connect('./db/database.db')
     cursor=db.cursor()
@@ -21,37 +23,33 @@ def get_prefix(bot, message):
     db.close()
 
     if prefix is None or prefix[0] is None:
-        return commands.when_mentioned_or('.')(bot, message)
+        return commands.when_mentioned_or('+')(bot, message)
     else:
         return commands.when_mentioned_or(str(prefix[0]))(bot, message)
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
+
 
 def innit(self,bot):
     self.bot=bot
 
 @bot.event
 async def on_connect():
-    
+    print('Bob is online!')
     await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.playing,name='on a Raspberry Pi 4 Model B!'))
 
 
 @commands.is_owner()
-@bot.command(name='load', help='Loads a cog')
-async def load(ctx, extension):
-    bot.load_extension(f'cogs.{extension}')
+@bot.command(name='reload', help='Reloads a cog')
+async def reload(ctx, extension):
+    bot.reload_extension(f'cogs.{extension}')
+    await ctx.channel.send(f'🔄 Reloaded {extension}!')
 
-@commands.is_owner()
-@bot.command(name='unload', help='Unloads a cog')
-async def unload(ctx, extension):
-    bot.unload_extension(f'cogs.{extension}')
 
-@load.error
-@unload.error
+@reload.error
 async def handler(ctx, error):
     if isinstance(error, commands.NotOwner):
-        embed=discord.Embed(description='You do not have permission to use this command', colour=discord.Colour.red())
-        await ctx.channel.send(embed=embed)
+        pass
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):

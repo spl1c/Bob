@@ -6,7 +6,7 @@ from discord.ext.commands import MemberConverter
 from discord.ext.commands.errors import MemberNotFound
 
 
-class Message(commands.Cog):
+class Message(commands.Cog, description='This is like sending an email to someone.'):
     def __init__(self, bot):
         self.bot=bot
     
