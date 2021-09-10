@@ -27,7 +27,7 @@ def get_prefix(bot, message):
     else:
         return commands.when_mentioned_or(str(prefix[0]))(bot, message)
 
-bot = commands.Bot(command_prefix=get_prefix, activity=discord.Activity(type = discord.ActivityType.playing,name='on a Raspberry Pi 4 Model B!'), intents=intents)
+bot = commands.Bot(command_prefix=get_prefix, activity=discord.Activity(type = discord.ActivityType.playing,name='.help | Bob.'), intents=intents)
 
 
 def innit(self,bot):
