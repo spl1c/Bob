@@ -57,4 +57,4 @@ for filename in os.listdir('./cogs'):
 
 
 
-bot.run('NzgyMjMyMjc1NTU4NDY1NTU3.X8JMkw.H5DOdhVlTQUBPqn7P0Ntzm8ItsU')
+bot.run(str(os.getenv('TOKEN')))
