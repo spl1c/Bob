@@ -162,10 +162,14 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
             cursor.close()
             db.close()
 
+            embed=discord.Embed(description=f'New prefix has been set.',
+                                colour=discord.Colour.green())
+            await ctx.channel.send(embed=embed)
+
 
 
     @prefix.error
-    async def handler(ctx, error):
+    async def handler(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
             embed=discord.Embed(description='You do not have permission to use this command', colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)

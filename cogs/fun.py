@@ -1,6 +1,7 @@
 import discord
+import math
 from discord.ext import commands
-from discord.ext import menus
+from discord.ext import pages
 from discord import FFmpegPCMAudio
 from discord.ext.commands import VoiceChannelConverter
 from discord.ext.commands.errors import ChannelNotFound
@@ -12,63 +13,39 @@ from datetime import datetime
 database_file='./db/database.db'
 
 
-class MyPages(menus.MenuPages, inherit_buttons=False):
-
-    @menus.button('⏪', position=menus.First(0))
-    async def rewind(self, payload: discord.RawReactionActionEvent):
-        await self.show_page(0)
-
-    @menus.button('◀️', position=menus.First(1))
-    async def back(self, payload: discord.RawReactionActionEvent):
-        await self.show_checked_page(self.current_page - 1)
-    
-    @menus.button('▶️', position=menus.First(2))
-    async def forward(self, payload: discord.RawReactionActionEvent):
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button('⏩',position=menus.First(3))
-    async def last(self, payload: discord.RawReactionActionEvent):
-
-        await self.show_page(self._source.get_max_pages() - 1)
-
-
-class MySource(menus.ListPageSource):
-    def __init__(self, ctx, data, title):
-        self.ctx=ctx
-        self.title=title
-        super().__init__(data, per_page=10)
-
-    async def write_page(self,menu, fields=[]):
-        len_data = len(self.entries)
-        embed=discord.Embed(title=self.title,
-                            colour=0xf2f2f2,
-                            timestamp=datetime.utcnow())
-
-        for name,value in fields:
-            embed.add_field(name=name, value=value, inline=False)
-        embed.set_footer(text=f'Page {menu.current_page+1}/{self.get_max_pages()}',icon_url=self.ctx.author.avatar_url)
-        return embed
-
-    async def format_page(self, menu, entries):
-        fields=[]
-        offset=(menu.current_page*self.per_page)
-        number=0+offset
-        
-        for entry in entries:
-            number+=1
-            fields.append((number, entry[0]))
-
-        return await self.write_page(menu,fields)
-
-
-
 class Fun(commands.Cog, description='Funny commands.'):
     def __init__(self, bot):
         self.bot = bot
         self.bot_icon='https://cdn.discordapp.com/attachments/804110204110897192/851582958199635998/bob_logo_1.png'
 
+    def get_pages(self,author):
+        
+        totalpages=math.ceil(len(entry)/10)
+        
+        
+        pages=[]
 
-    @commands.group(name='joke', help='This is a group  of commands about jokes.', invoke_without_command=True)
+        for i in range(totalpages):
+            offset=(i*10)
+            number=0+offset
+    
+            embed=discord.Embed(title='🤡  Joke list',
+                colour=0xf2f2f2,
+                timestamp=datetime.utcnow())
+
+            embed.set_footer(text=f"Only {author.name}#{author.discriminator} can control the buttons!",icon_url=author.avatar)
+            
+            fields=[(f"{i[0]}", i[1]) for i in entry if entry.index(i) >= number and entry.index(i) < number+10]
+            for name,value in fields:
+                embed.add_field(name=name, value=value, inline=False)
+            pages.append(embed)
+
+        
+        return pages
+
+
+
+    @commands.group(name='joke', help='This is a group of commands about jokes.', invoke_without_command=True)
     async def joke(self, ctx):
         prefix=self.bot.command_prefix(self.bot, ctx.message)[2]
         embed=discord.Embed(color=0xf2f2f2,
@@ -78,8 +55,66 @@ class Fun(commands.Cog, description='Funny commands.'):
         embed.add_field(name="Suggest", value=f"**{prefix}joke suggest [joke]**: Suggests a joke that can later be added to the bot.", inline=False)
         embed.add_field(name="List", value=f"**{prefix}joke list**: Shows a list of the official jokes.", inline=False)
         embed.add_field(name="Pending list", value=f"**{prefix}joke pendinglist**: Shows a list of all the pending jokes.", inline=False)
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
-        await ctx.channel.send(embed=embed)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar)
+        await ctx.channel.send(embed=embed)    
+
+
+
+
+    @joke.command(name='list', help='Shows a list of the official jokes.')
+    async def list(self, ctx):
+        
+        db=sqlite3.connect(database_file)
+        cursor=db.cursor()
+        cursor.execute("SELECT * FROM jokes WHERE status=?",('official',))
+        global entry
+        jokes = cursor.fetchall()
+        entry = list(enumerate([str(i[0]) for i in jokes], start=1))
+        cursor.close()
+        db.close()
+        paginator = pages.Paginator(pages=self.get_pages(author=ctx.author), use_default_buttons=False)
+
+        paginator.add_button(
+            pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green))
+        
+        paginator.add_button(
+            pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True))
+
+        paginator.add_button(
+            pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green))
+        
+        await paginator.send(ctx)
+
+    @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
+    async def pendinglist(self,ctx):
+        
+        db=sqlite3.connect(database_file)
+        cursor=db.cursor()
+        cursor.execute("SELECT * FROM jokes WHERE status=?",('pending',))
+        global entry
+        jokes = cursor.fetchall()
+        entry = list(enumerate([str(i[0]) for i in jokes], start=1))
+        cursor.close()
+        db.close()
+        if len(jokes) == 0:
+            embed=discord.Embed(description='There is no pending jokes at the moment.', colour=discord.Colour.red())
+            await ctx.channel.send(embed=embed)
+        else:
+            paginator = pages.Paginator(pages=self.get_pages(author=ctx.author), use_default_buttons=False)
+            paginator.add_button(
+                pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green)
+            )
+            paginator.add_button(
+                pages.PaginatorButton(
+                    "page_indicator", style=discord.ButtonStyle.gray, disabled=True
+                )
+            )
+            paginator.add_button(
+                pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green)
+            )
+            await paginator.send(ctx)
+
+
 
     @joke.command(name='tell', help='Tells a joke.')
     async def tell(self, ctx):
@@ -95,37 +130,7 @@ class Fun(commands.Cog, description='Funny commands.'):
         embed_message = discord.Embed(title='Joke', description=str(joke_choice[0]), color=0xf2f2f2)          
         await ctx.channel.send(embed=embed_message)
 
-    @joke.command(name='list', help='Shows a list of the official jokes.')
-    async def list(self,ctx):
-        
-        db=sqlite3.connect(database_file)
-        cursor=db.cursor()
-        cursor.execute("SELECT * FROM jokes WHERE status=?",('official',))
-        global jokes
-        jokes = cursor.fetchall()
-        cursor.close()
-        db.close()
-
-        pages = MyPages(source=MySource(ctx, jokes, title='Joke list'),clear_reactions_after=True)
-        await pages.start(ctx)
- 
-    @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
-    async def pendinglist(self,ctx):
-        
-        db=sqlite3.connect(database_file)
-        cursor=db.cursor()
-        cursor.execute("SELECT * FROM jokes WHERE status=?",('pending',))
-        global jokes
-        jokes = cursor.fetchall()
-        cursor.close()
-        db.close()
-        if len(jokes) == 0:
-            embed=discord.Embed(description='There is no pending jokes at the moment.', colour=discord.Colour.red())
-            await ctx.channel.send(embed=embed)
-        else:
-            pages = MyPages(source=MySource(ctx, jokes, title='Pending joke list'),clear_reactions_after=True)
-            await pages.start(ctx)   
-
+    
 
     @joke.command(name='suggest', help='Suggest a joke that can later become official.')
     async def suggest(self, ctx, *,joke=None):

@@ -1,74 +1,60 @@
+import math
 import discord
 from discord.ext import commands
-from discord.ext import menus
+from discord.ext import pages
 from discord.ext.commands import Group
 from datetime import datetime
 
-# Help paginator using menus!
 
-class MyPages(menus.MenuPages, inherit_buttons=False):
-
-    @menus.button('◀️', position=menus.First(2))
-    async def back(self, payload: discord.RawReactionActionEvent):
-        await self.show_checked_page(self.current_page - 1)
-    
-    @menus.button('▶️', position=menus.First(3))
-    async def forward(self, payload: discord.RawReactionActionEvent):
-        await self.show_checked_page(self.current_page + 1)
-
-class MySource(menus.ListPageSource):
-    def __init__(self, ctx, data, embed_title, embed_description, embed_inline):
-        self.ctx=ctx
-        self.embed_title=embed_title
-        self.embed_description=embed_description
-        self.embed_inline=embed_inline
-        super().__init__(data, per_page=6)
-    
-    # This writes the embed using the fields variable
-    async def write_page(self, menu, fields=[]):
-        len_data = len(self.entries)
-
-        embed=discord.Embed(title=self.embed_title,
-                            description=self.embed_description,
-                            colour=0xf2f2f2,
-                            timestamp=datetime.utcnow())
-
-        for name,value in fields:
-                embed.add_field(name=name, value=value, inline=self.embed_inline)
-        embed.set_footer(text=f"Page {menu.current_page+1}/{self.get_max_pages()}",icon_url=self.ctx.author.avatar_url)
-
-        return embed
-    
-    # This formats the pages
-    async def format_page(self, menu, entries):
-        fields=[]
-        offset=(menu.current_page*self.per_page)
-
-        for entry in entries:
-            fields.append((entry[0], entry[1]))
-
-        return await self.write_page(menu,fields)
-
-
-
-# Important part, the actual help command. (subclassing the help command)
 class MyHelp(commands.HelpCommand):
+    
+
+    def get_pages(self, entry, embed_title, embed_description, embed_inline, author, limit):
+        
+        totalpages=math.ceil(len(entry)/limit)
+        
+        pages=[]
+
+        for i in range(totalpages):
+            offset=(i*limit)
+            number=0+offset
+    
+            embed=discord.Embed(title=embed_title,
+                description=embed_description,
+                colour=0xf2f2f2,
+                timestamp=datetime.utcnow())
+
+            embed.set_footer(text=f"Only {author.name}#{author.discriminator} can control the buttons!",icon_url=author.avatar)
+            
+            fields=[(f"{i[0]}", i[1]) for i in entry if entry.index(i) >= number and entry.index(i) < number+limit]
+            for name,value in fields:
+                embed.add_field(name=name, value=value, inline=embed_inline)
+            pages.append(embed)
+
+        
+        return pages
+
     def get_clean_command_signature(self, command):
-        return '%s%s %s' % (self.clean_prefix, command.qualified_name, command.signature)
+
+        return '%s%s %s' % (self.context.clean_prefix, command.qualified_name, command.signature)
 
     async def send_bot_help(self, mapping):
-        prefix=self.clean_prefix
+        prefix=self.context.clean_prefix
 
         description=f"*Hi, I'm Bob and I'm here to help you!*\n\n**Do you need help with a command?**\nType `{prefix}help [command]`.\n\n**Do you need help with a category?**\nType `{prefix}help [category]`.\n\n**__CATEGORIES__**"
 
         coglist=[]
         cogs = dict(self.context.bot.cogs)
+        del cogs['WebScrap']
         for k, v in cogs.items():
             coglist.append([k, cogs[k].description])
 
 
-        pages = MyPages(source=MySource(self.context, coglist, embed_title='Help', embed_description=description,embed_inline=True), clear_reactions_after=True)
-        await pages.start(self.context)
+        paginator = pages.Paginator(pages=self.get_pages(coglist, embed_title='Help', embed_description=description, embed_inline=True, author=self.context.author, limit=6), use_default_buttons=False)
+        paginator.add_button(pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green))
+        paginator.add_button(pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True))
+        paginator.add_button(pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green))
+        await paginator.send(self.context)
 
 
     async def send_cog_help(self, cog):
@@ -79,8 +65,11 @@ class MyHelp(commands.HelpCommand):
             commandlist.append([str(signature), str(command.help)])
 
 
-        pages = MyPages(source=MySource(self.context, commandlist, embed_title=cog.qualified_name, embed_description='', embed_inline=False), clear_reactions_after=True)
-        await pages.start(self.context)
+        paginator = pages.Paginator(pages=self.get_pages(commandlist, embed_title=cog.qualified_name, embed_description='', embed_inline=False, author=self.context.author, limit=10), use_default_buttons=False)
+        paginator.add_button(pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green))
+        paginator.add_button(pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True))
+        paginator.add_button(pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green))
+        await paginator.send(self.context)
 
 
     async def send_group_help(self, group):
@@ -88,8 +77,12 @@ class MyHelp(commands.HelpCommand):
         filtered_commands=await self.filter_commands(group.commands, sort=True)
         for command in filtered_commands:
             commandlist.append([str(self.get_clean_command_signature(command)),str(command.help)])
-        pages = MyPages(source=MySource(self.context, commandlist, embed_title=group.qualified_name, embed_description='*This is a group of commands*', embed_inline=False), clear_reactions_after=True)
-        await pages.start(self.context)
+
+        paginator = pages.Paginator(pages=self.get_pages(commandlist, embed_title=group.qualified_name, embed_description='*This is a group of commands*', embed_inline=False, author=self.context.author, limit=10), use_default_buttons=False)
+        paginator.add_button(pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green))
+        paginator.add_button(pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True))
+        paginator.add_button(pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green))
+        await paginator.send(self.context)
     
 
     async def send_command_help(self, command):
