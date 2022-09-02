@@ -2,48 +2,64 @@ import os
 import sqlite3
 import discord
 from discord.ext import commands
-from discord.ext.commands.help import MinimalHelpCommand
+from dotenv import load_dotenv
+load_dotenv()
+
 
 
 intents = discord.Intents.all()
-intents.guilds = True
-intents.members = True
-intents.presences = True
-intents.messages = True
-intents.reactions = True
 
 def get_prefix(bot, message): 
     if not message.guild:
-        return commands.when_mentioned_or('+')(bot, message)
-
-    db=sqlite3.connect('./db/database.db')
-    cursor=db.cursor()
-    cursor.execute('SELECT prefix FROM main WHERE guild_id=?',(str(message.guild.id),))
-    prefix=cursor.fetchone()
-    cursor.close()
-    db.close()
-
-    if prefix is None or prefix[0] is None:
-        return commands.when_mentioned_or('+')(bot, message)
+        return commands.when_mentioned_or('&')(bot, message)
     else:
-        return commands.when_mentioned_or(str(prefix[0]))(bot, message)
+        db=sqlite3.connect('./db/database.db')
+        cursor=db.cursor()
+        cursor.execute('SELECT prefix FROM main WHERE guild_id=?',(str(message.guild.id),))
+        prefix=cursor.fetchone()
+        cursor.close()
+        db.close()
 
-bot = commands.Bot(command_prefix=get_prefix, activity=discord.Activity(type = discord.ActivityType.playing,name='.help | Bob.'), intents=intents)
+        if prefix is None or prefix[0] is None:
+            return commands.when_mentioned_or('&')(bot, message)
+        else:
+            return commands.when_mentioned_or(str(prefix[0]))(bot, message)
 
+class MyBot(commands.Bot):
+    async def setup_hook(self):
 
-def innit(self,bot):
-    self.bot=bot
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'):
+                await bot.load_extension(f"cogs.{filename[:-3]}")
+                print(f"{filename} loaded!")
+
+            else:
+                print(f"Unable to load {filename}.")
+        
+        print('Bot is setup.')
+
+bot = MyBot(command_prefix=get_prefix, activity=discord.Activity(type = discord.ActivityType.playing, name='.help | Bob.'), intents=intents)
+
 
 @bot.event
 async def on_ready():
-    print('Bob is online!')
+    print('Bot is ready.')
+
+
+@bot.event
+async def on_connect():
+    print('Bot is connected to Discord.')
 
 
 @commands.is_owner()
 @bot.command(name='reload', help='Reloads a cog')
 async def reload(ctx, extension):
-    bot.reload_extension(f'cogs.{extension}')
-    await ctx.channel.send(f'🔄 Reloaded {extension}!')
+    await bot.reload_extension(f'cogs.{extension}')
+    embed = discord.Embed(
+        description=f'```🔄 Reloaded cogs.{extension} ```',
+        color=0xf2f2f2
+    )
+    await ctx.reply(embed=embed)
 
 
 @reload.error
@@ -51,10 +67,4 @@ async def handler(ctx, error):
     if isinstance(error, commands.NotOwner):
         pass
 
-for filename in os.listdir('./cogs'):
-    if filename.endswith('.py'):
-        bot.load_extension(f'cogs.{filename[:-3]}')
-
-
-
-bot.run('NzgyMjMyMjc1NTU4NDY1NTU3.X8JMkw.H5DOdhVlTQUBPqn7P0Ntzm8ItsU')
+bot.run('NzgyMjMyMjc1NTU4NDY1NTU3.GuZqMs.z2B4Js6ISgd49NIRQQlqqPj_hxPnNsxNHr7ZOc')

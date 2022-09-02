@@ -30,7 +30,8 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
             guild = member.guild
             embed=discord.Embed(description=str(result_1[0]).format(member_count=member_count, user_mention=user_mention, user_name=user_name, guild=guild),
                                 colour=0x00BDED,
-                                timestamp=datetime.utcnow())
+                                timestamp=datetime.utcnow()
+                                )
             embed.set_author(url=member.avatar_url, name=user_name)
             embed.set_footer(icon_url=guild.icon_url, text=guild.name)
             
@@ -48,9 +49,9 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
         embed=discord.Embed(color=0xf2f2f2,
                             timestamp=datetime.utcnow())
         embed.set_author(name="Available welcome commands", icon_url=self.bot_icon)
-        embed.add_field(name="Channel", value=".welcome channel [id/mention]", inline=False)
-        embed.add_field(name="Message", value=".welcome message [message]\n\n**Message example:** Welcome {user_mention}({user_name}) to {guild}, you are the user number {member_count}!", inline=True)
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+        embed.add_field(name="Channel", value=f"{await self.bot.get_prefix(ctx)}welcome channel [id/mention]", inline=False)
+        embed.add_field(name="Message", value=f"{await self.bot.get_prefix(ctx)}welcome message [message]\n\n**Message example:**"+" Welcome {user_mention}({user_name}) to {guild}, you are the user number {member_count}!", inline=True)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
         await ctx.channel.send(embed=embed)
 
 
@@ -79,7 +80,7 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
                                     timestamp=datetime.utcnow(),
                                     colour=0x66ff66)
                 embed.set_author(name='Welcome Message')
-                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
                 await ctx.channel.send(embed=embed)
 
             else:
@@ -91,7 +92,7 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
                                     timestamp=datetime.utcnow(),
                                     colour=0x66ff66)
                 embed.set_author(name='Welcome Message')
-                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+                embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
                 await ctx.channel.send(embed=embed)
             
             
@@ -176,5 +177,5 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
 
 
 
-def setup(bot):
-    bot.add_cog(Settings(bot))
+async def setup(bot):
+    await bot.add_cog(Settings(bot))

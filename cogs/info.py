@@ -8,7 +8,7 @@ from discord.ext.commands.errors import MemberNotFound
 class Info(commands.Cog, description='Stuff that will display information.'):
     def __init__(self, bot):
         self.bot=bot
-        self.link='https://discord.com/api/oauth2/authorize?client_id=782232275558465557&permissions=2117463287&scope=bot'
+        self.link='https://discord.com/api/oauth2/authorize?client_id=782232275558465557&permissions=8&scope=bot'
         self.logo='https://cdn.discordapp.com/avatars/782232275558465557/42e7455f136d4f8945a2fe82967f1add.webp?size=2048'
     
     
@@ -73,7 +73,7 @@ class Info(commands.Cog, description='Stuff that will display information.'):
         if len(invites)!=0:
             embed.add_field(name='Invite link', value=invites[0].url,inline=True)
 
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
 
         await ctx.channel.send(embed=embed)
 
@@ -98,9 +98,9 @@ class Info(commands.Cog, description='Stuff that will display information.'):
         roles=[role for role in user.roles]
         
         #Embed message
-        embed.set_author(name=f'{user.name}#{user.discriminator}', icon_url=user.avatar_url)
-        embed.set_thumbnail(url=user.avatar_url)
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{user.name}#{user.discriminator}', icon_url=user.avatar.url)
+        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
         embed.add_field(name='ID', value=user.id, inline=False)
         embed.add_field(name='Registered', value=user.created_at.strftime(f'%m/%d/%Y | %H:%M:%S UTC'),inline=True)
         embed.add_field(name='Joined', value=user.joined_at.strftime(f'%m/%d/%Y | %H:%M:%S UTC'),inline=True)
@@ -180,9 +180,9 @@ class Info(commands.Cog, description='Stuff that will display information.'):
             user=ctx.author
         embed=discord.Embed(colour=0xf2f2f2,
                             timestamp=datetime.utcnow())
-        embed.set_author(name=f'{user.name}#{user.discriminator}', icon_url=user.avatar_url)
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
-        embed.set_image(url=user.avatar_url_as(size=2048))
+        embed.set_author(name=f'{user.name}#{user.discriminator}', icon_url=user.avatar.url)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
+        embed.set_image(url=user.avatar.url)
 
         await ctx.channel.send(embed=embed)
 
@@ -194,5 +194,5 @@ class Info(commands.Cog, description='Stuff that will display information.'):
 
 
 
-def setup(bot):
-    bot.add_cog(Info(bot))
+async def setup(bot):
+    await bot.add_cog(Info(bot))

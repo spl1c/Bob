@@ -26,11 +26,11 @@ class Message(commands.Cog, description='This is like sending an email to someon
         else:
             embed1=discord.Embed(description=message, color=0x0099ff, timestamp=datetime.utcnow())
 
-            embed1.set_author(name=f'{ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar_url)
+            embed1.set_author(name=f'{ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
             embed1.set_footer(text='Reply using .msg')
 
             embed2=discord.Embed(description=f'**Message:** {message}', color=0x00ff00, timestamp=datetime.utcnow())
-            embed2.set_author(name=f'Message sent to {user.name}#{user.discriminator}.',icon_url=user.avatar_url)
+            embed2.set_author(name=f'Message sent to {user.name}#{user.discriminator}.',icon_url=user.avatar.url)
 
 
             await user.send(embed=embed1)
@@ -66,7 +66,7 @@ class Message(commands.Cog, description='This is like sending an email to someon
             embed1.set_footer(text='Reply using .msg')
 
             embed2=discord.Embed(description=f'**Message:** {message}', color=0x00ff00, timestamp=datetime.utcnow())
-            embed2.set_author(name=f'Anonymous message sent to {user.name}#{user.discriminator}.',icon_url=user.avatar_url)
+            embed2.set_author(name=f'Anonymous message sent to {user.name}#{user.discriminator}.',icon_url=user.avatar.url)
 
 
             await user.send(embed=embed1)
@@ -80,5 +80,5 @@ class Message(commands.Cog, description='This is like sending an email to someon
         
 
 
-def setup(bot):
-    bot.add_cog(Message(bot))
+async def setup(bot):
+    await bot.add_cog(Message(bot))

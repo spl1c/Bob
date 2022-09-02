@@ -1,7 +1,8 @@
 import discord
 import math
+from discord import ui
 from discord.ext import commands
-from discord.ext import pages
+from discord.ext import menus
 from discord import FFmpegPCMAudio
 from discord.ext.commands import VoiceChannelConverter
 from discord.ext.commands.errors import ChannelNotFound
@@ -13,36 +14,85 @@ from datetime import datetime
 database_file='./db/database.db'
 
 
+class MyMenuPages(ui.View, menus.MenuPages):
+    def __init__(self, source, page):
+        super().__init__(timeout=60)
+        self._source = source
+        self.current_page = page
+        self.ctx = None
+        self.message = None
+
+    async def start(self, ctx, *, channel=None, wait=False):
+        # We wont be using wait/channel, you can implement them yourself. This is to match the MenuPages signature.
+        await self._source._prepare_once()
+        self.ctx = ctx
+        self.message = await self.send_initial_message(ctx, ctx.channel)
+
+    async def _get_kwargs_from_page(self, page):
+        """This method calls ListPageSource.format_page class"""
+        value = await super()._get_kwargs_from_page(page)
+        if 'view' not in value:
+            value.update({'view': self})
+        return value
+
+    async def interaction_check(self, interaction):
+        """Only allow the author that invoke the command to be able to use the interaction"""
+        return interaction.user == self.ctx.author
+
+
+    @ui.button(emoji='◀️', style=discord.ButtonStyle.blurple)
+    async def before_page(self, interaction, button):
+        self.stop_page.label = self.current_page - 1
+        await self.show_checked_page(self.current_page - 1)
+        await interaction.response.defer()
+
+    @ui.button(label="0", style=discord.ButtonStyle.blurple, disabled=False)
+    async def stop_page(self, interaction, button):
+        
+        await interaction.response.defer()
+
+    @ui.button(emoji='▶️', style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction, button):
+        self.stop_page.label = self.current_page + 1
+        await self.show_checked_page(self.current_page + 1)
+        await interaction.response.defer()
+
+
+
+class MySource(menus.ListPageSource):
+    def __init__(self, ctx, entries, per_page, title):
+        self.ctx = ctx
+        self.per_page = per_page
+        self.entries = entries
+        self.title = title
+
+        pages, left_over = divmod(len(entries), per_page)
+        if left_over:
+            pages += 1
+
+        self._max_pages = pages
+
+    async def format_page(self, menu, entries):
+
+        offset = (menu.current_page * self.per_page) + 1
+        total_data = len(self.entries)
+        total = f"{offset:,} - {min(total_data, offset + self.per_page -1):,} of {total_data:,} jokes"
+
+        e = discord.Embed(title=f"{self.title} · Page {(menu.current_page) + 1} of {(self._max_pages)}", color=0xf2f2f2)
+
+        for name, value in entries:
+            e.add_field(name=name, value=value, inline=False)
+
+        e.set_footer(text=f"{total} · Only {self.ctx.author.name}#{self.ctx.author.discriminator} can control this list!", icon_url=self.ctx.author.avatar.url)
+        return e
+
+
+
+
 class Fun(commands.Cog, description='Funny commands.'):
     def __init__(self, bot):
         self.bot = bot
         self.bot_icon='https://cdn.discordapp.com/attachments/804110204110897192/851582958199635998/bob_logo_1.png'
-
-    def get_pages(self,author):
-        
-        totalpages=math.ceil(len(entry)/10)
-        
-        
-        pages=[]
-
-        for i in range(totalpages):
-            offset=(i*10)
-            number=0+offset
-    
-            embed=discord.Embed(title='🤡  Joke list',
-                colour=0xf2f2f2,
-                timestamp=datetime.utcnow())
-
-            embed.set_footer(text=f"Only {author.name}#{author.discriminator} can control the buttons!",icon_url=author.avatar)
-            
-            fields=[(f"{i[0]}", i[1]) for i in entry if entry.index(i) >= number and entry.index(i) < number+10]
-            for name,value in fields:
-                embed.add_field(name=name, value=value, inline=False)
-            pages.append(embed)
-
-        
-        return pages
-
 
 
     @commands.group(name='joke', help='This is a group of commands about jokes.', invoke_without_command=True)
@@ -55,14 +105,14 @@ class Fun(commands.Cog, description='Funny commands.'):
         embed.add_field(name="Suggest", value=f"**{prefix}joke suggest [joke]**: Suggests a joke that can later be added to the bot.", inline=False)
         embed.add_field(name="List", value=f"**{prefix}joke list**: Shows a list of the official jokes.", inline=False)
         embed.add_field(name="Pending list", value=f"**{prefix}joke pendinglist**: Shows a list of all the pending jokes.", inline=False)
-        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar)
+        embed.set_footer(text=f'Requested by {ctx.author.name}#{ctx.author.discriminator}',icon_url=ctx.author.avatar.url)
         await ctx.channel.send(embed=embed)    
 
 
 
 
     @joke.command(name='list', help='Shows a list of the official jokes.')
-    async def list(self, ctx):
+    async def list(self, ctx, page = 1):
         
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
@@ -72,18 +122,9 @@ class Fun(commands.Cog, description='Funny commands.'):
         entry = list(enumerate([str(i[0]) for i in jokes], start=1))
         cursor.close()
         db.close()
-        paginator = pages.Paginator(pages=self.get_pages(author=ctx.author), use_default_buttons=False)
-
-        paginator.add_button(
-            pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green))
-        
-        paginator.add_button(
-            pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True))
-
-        paginator.add_button(
-            pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green))
-        
-        await paginator.send(ctx)
+        formatter = MySource(ctx, entry, per_page=10)
+        menu = MyMenuPages(formatter, page-1)
+        await menu.start(ctx)
 
     @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
     async def pendinglist(self,ctx):
@@ -241,6 +282,28 @@ class Fun(commands.Cog, description='Funny commands.'):
             await ctx.channel.send(embed=embed)
 
 
+    @commands.command(name='bababooey', help='Bababooey!', aliases=['bababoi','bababoui'])
+    async def bababooey(self, ctx, channel=None):
+        voicestatus=ctx.author.voice
+        converter = VoiceChannelConverter()
+        if channel==None:
+            channel=voicestatus.channel
+        else:
+            try:
+                channel = await converter.convert(ctx,channel)
+            except ChannelNotFound:
+                embed=discord.Embed(descriptio='Channel not found.',color=discord.Colour.red())
+                await ctx.channel.send(embed=embed)
+        await ctx.message.delete()
+        voice = await channel.connect()
+        source = FFmpegPCMAudio('./attachments/bababooey.mp3')
+        voice.play(source)
+        while voice.is_playing():
+            time.sleep(.1)
+        await voice.disconnect()
+
+
+
     @commands.command(name='chupapi', help='Chupapi Monyonyo!')
     async def chupapi(self, ctx, channel=None):
         voicestatus=ctx.author.voice
@@ -284,5 +347,5 @@ class Fun(commands.Cog, description='Funny commands.'):
         await voice.disconnect()
 
 
-def setup(bot):
-    bot.add_cog(Fun(bot))
+async def setup(bot):
+    await bot.add_cog(Fun(bot))
