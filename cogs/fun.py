@@ -25,9 +25,10 @@ class MyMenuPages(ui.View, menus.MenuPages):
     async def start(self, ctx, *, channel=None, wait=False):
         # We wont be using wait/channel, you can implement them yourself. This is to match the MenuPages signature.
         await self._source._prepare_once()
+        self.stop_page.label=f"1/{self._source._max_pages}"
         self.ctx = ctx
         self.message = await self.send_initial_message(ctx, ctx.channel)
-
+        
     async def _get_kwargs_from_page(self, page):
         """This method calls ListPageSource.format_page class"""
         value = await super()._get_kwargs_from_page(page)
@@ -42,18 +43,18 @@ class MyMenuPages(ui.View, menus.MenuPages):
 
     @ui.button(emoji='◀️', style=discord.ButtonStyle.blurple)
     async def before_page(self, interaction, button):
-        self.stop_page.label = self.current_page - 1
+        self.stop_page.label = f"{self.current_page}/{self._source._max_pages}"
         await self.show_checked_page(self.current_page - 1)
         await interaction.response.defer()
 
-    @ui.button(label="0", style=discord.ButtonStyle.blurple, disabled=False)
+    @ui.button(label="1", style=discord.ButtonStyle.blurple, disabled=False)
     async def stop_page(self, interaction, button):
         
         await interaction.response.defer()
 
     @ui.button(emoji='▶️', style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction, button):
-        self.stop_page.label = self.current_page + 1
+        self.stop_page.label = f"{self.current_page + 2}/{self._source._max_pages}"
         await self.show_checked_page(self.current_page + 1)
         await interaction.response.defer()
 
@@ -78,7 +79,7 @@ class MySource(menus.ListPageSource):
         total_data = len(self.entries)
         total = f"{offset:,} - {min(total_data, offset + self.per_page -1):,} of {total_data:,} jokes"
 
-        e = discord.Embed(title=f"{self.title} · Page {(menu.current_page) + 1} of {(self._max_pages)}", color=0xf2f2f2)
+        e = discord.Embed(title=f"{self.title}", color=0xf2f2f2)
 
         for name, value in entries:
             e.add_field(name=name, value=value, inline=False)
@@ -122,12 +123,12 @@ class Fun(commands.Cog, description='Funny commands.'):
         entry = list(enumerate([str(i[0]) for i in jokes], start=1))
         cursor.close()
         db.close()
-        formatter = MySource(ctx, entry, per_page=10)
+        formatter = MySource(ctx, entry, per_page=10, title="🤡 Joke list")
         menu = MyMenuPages(formatter, page-1)
         await menu.start(ctx)
 
     @joke.command(name='pendinglist', help='Shows a list of all the pending jokes.')
-    async def pendinglist(self,ctx):
+    async def pendinglist(self, ctx, page = 1):
         
         db=sqlite3.connect(database_file)
         cursor=db.cursor()
@@ -141,20 +142,9 @@ class Fun(commands.Cog, description='Funny commands.'):
             embed=discord.Embed(description='There is no pending jokes at the moment.', colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
         else:
-            paginator = pages.Paginator(pages=self.get_pages(author=ctx.author), use_default_buttons=False)
-            paginator.add_button(
-                pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green)
-            )
-            paginator.add_button(
-                pages.PaginatorButton(
-                    "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-                )
-            )
-            paginator.add_button(
-                pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green)
-            )
-            await paginator.send(ctx)
-
+            formatter = MySource(ctx, entry, per_page=10, title="🤡 Pending jokes")
+            menu = MyMenuPages(formatter, page-1)
+            await menu.start(ctx)
 
 
     @joke.command(name='tell', help='Tells a joke.')
@@ -216,7 +206,7 @@ class Fun(commands.Cog, description='Funny commands.'):
             if int(i[1])==number:
                 joke=i[0]
         if joke is None:
-            embed=discord.Embed(description='That number  is not on the list! Please provide a valid number.',colour=discord.Colour.red())
+            embed=discord.Embed(description='That number is not on the list! Please provide a valid number.',colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
         else:
             cursor.execute('DELETE FROM jokes WHERE jokes=? AND status=?', (str(joke),'official'))
@@ -233,7 +223,6 @@ class Fun(commands.Cog, description='Funny commands.'):
         cursor=db.cursor()
         cursor.execute("SELECT jokes, ROW_NUMBER() OVER() AS number FROM jokes WHERE status=?",('pending',))
         jokes=cursor.fetchall()
-        print(jokes)
         joke=None
         for i in jokes:
             if int(i[1])==number:
@@ -267,7 +256,7 @@ class Fun(commands.Cog, description='Funny commands.'):
             await ctx.channel.send(embed=embed)
         else:
             cursor.execute(f'DELETE FROM jokes WHERE jokes=? AND status=?',(joke,'pending'))
-            embed=discord.Embed(description="Joke has been removed from the joke list.",color=discord.Colour.green())
+            embed=discord.Embed(description="Joke has been successfully rejected.",color=discord.Colour.green())
             await ctx.channel.send(embed=embed)
         db.commit()
         cursor.close()
@@ -280,6 +269,7 @@ class Fun(commands.Cog, description='Funny commands.'):
         if isinstance(error, commands.MissingRequiredArgument):
             embed=discord.Embed(description='Please provide a valid number.', colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
+
 
 
     @commands.command(name='bababooey', help='Bababooey!', aliases=['bababoi','bababoui'])

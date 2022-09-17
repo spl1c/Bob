@@ -67,4 +67,4 @@ async def handler(ctx, error):
     if isinstance(error, commands.NotOwner):
         pass
 
-bot.run('NzgyMjMyMjc1NTU4NDY1NTU3.GuZqMs.z2B4Js6ISgd49NIRQQlqqPj_hxPnNsxNHr7ZOc')
+bot.run(str(os.getenv('BOBTOKEN')))
