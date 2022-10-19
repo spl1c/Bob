@@ -2,8 +2,6 @@ import os
 import sqlite3
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
-load_dotenv()
 
 
 
@@ -34,7 +32,7 @@ class MyBot(commands.Bot):
                 print(f"{filename} loaded!")
 
             else:
-                print(f"Unable to load {filename}.")
+                print(f"{filename} is not a cog.")
         
         print('Bot is setup.')
 

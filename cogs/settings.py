@@ -32,8 +32,8 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
                                 colour=0x00BDED,
                                 timestamp=datetime.utcnow()
                                 )
-            embed.set_author(url=member.avatar_url, name=user_name)
-            embed.set_footer(icon_url=guild.icon_url, text=guild.name)
+            embed.set_author(url=member.avatar.url, name=user_name)
+            embed.set_footer(icon_url=guild.icon.url, text=guild.name)
             
             channel=self.bot.get_channel(id=int(result[0]))
             await channel.send(content=user_mention, embed=embed)
@@ -57,12 +57,12 @@ class Settings(commands.Cog, description='Commands used to configure myself!'):
 
 
     @welcome.command(name='channel', help='Sets a channel for the welcome message.')
-    async def channel(self, ctx, channel: int):
+    async def channel(self, ctx, channel):
         try:
             converter=TextChannelConverter()
             channel=await converter.convert(ctx,channel)
         except:
-            embed=discord.Embed(description='You must provide a channel.',colour=discord.Colour.red())
+            embed=discord.Embed(description="Couldn't find that channel.",colour=discord.Colour.red())
             await ctx.channel.send(embed=embed)
         
         if ctx.author.guild_permissions.manage_channels == True:
