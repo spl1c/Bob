@@ -1,4 +1,3 @@
-from tkinter import Button
 import discord
 from discord.ext import commands
 from discord.ext import menus
@@ -6,18 +5,19 @@ from discord import ui
 
 
 class MyMenuPages(ui.View, menus.MenuPages):
-    def __init__(self, source):
+    def __init__(self, message, ctx, source, **kwargs):
         super().__init__(timeout=60)
         self._source = source
         self.current_page = 0
-        self.ctx = None
-        self.message = None
+        self.ctx = ctx
+        self.message = message
+        super().__init__(**kwargs)
 
     async def start(self, ctx, *, channel=None, wait=False):
         await self._source._prepare_once()
         self.stop_page.label = f"{self.current_page+1}/{self._source._max_pages}"
         self.ctx = ctx
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx, self.message)
 
     async def _get_kwargs_from_page(self, page):
         value = await super()._get_kwargs_from_page(page)
@@ -27,6 +27,11 @@ class MyMenuPages(ui.View, menus.MenuPages):
 
     async def interaction_check(self, interaction):
         return interaction.user == self.ctx.author
+
+    async def send_initial_message(self, ctx, message):
+        page = await self._source.get_page(0)
+        kwargs = await self._get_kwargs_from_page(page)
+        return await message.edit(**kwargs)
 
     @ui.button(label='◀', style=discord.ButtonStyle.blurple)
     async def before_page(self, interaction, button):
@@ -66,17 +71,21 @@ class HelpPageSource(menus.ListPageSource):
             embed.add_field(name=name, value=value, inline=self.inline)
         return embed
 
-class MyHelp(commands.HelpCommand):
 
+class MyHelp(commands.HelpCommand):
 
     def get_clean_command_signature(self, command):
         return '%s%s%s' % (self.context.clean_prefix, command.qualified_name, ['' if command.usage is None else f" {command.usage}"][0])
 
     async def send_bot_help(self, mapping):
 
-        async def my_callback(cog):
-            await self.send_cog_help(cog=cog)
+        global message
+        message = None
 
+        async def my_callback(interaction):
+            cog_view = await self.send_cog_help(cog=v)
+            interaction.user = interaction.message.author
+            await interaction.response.edit_message(view=cog_view)
 
         description=f"""Hey, I'm Bob!\n
 **If you need help with a category use:**
@@ -91,7 +100,7 @@ class MyHelp(commands.HelpCommand):
         for k, v in cogs.items():
             select_menu.add_option(label=k)
 
-        select_menu.callback = await my_callback(cog=v)
+        select_menu.callback = my_callback
 
         view = ui.View()
         view.add_item(select_menu)
@@ -102,9 +111,7 @@ class MyHelp(commands.HelpCommand):
                             colour=0xFFFFFF,
                             )
 
-        await self.context.reply(embed=embed, view=view)
-
-
+        message = await self.context.reply(embed=embed, view=view)
 
 
 #        entries=[]
@@ -124,8 +131,8 @@ class MyHelp(commands.HelpCommand):
             commandlist.append([str(signature), str(command.brief)])
 
         formatter = HelpPageSource(commandlist, self, title="❔ Category Help", description=None, inline=False)
-        menu = MyMenuPages(formatter)
-        await menu.start(self.context)
+        menu = MyMenuPages(self.context.message, self.context, formatter)
+        return await menu.start(self.context)
 
 
     async def send_group_help(self, group):
